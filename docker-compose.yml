@@ -12,14 +12,15 @@ services:
       - "5433:5432"
     networks:
       - sensor_network
+    restart: unless-stopped
 
   web:
-    build: .                   # <--- SE CONSTRUYE DESDE LA RAIZ
+    build: .
     container_name: sensor_api
     volumes:
-      - ./app:/app             # <--- TU CÓDIGO DJANGO ESTÁ EN app/
+      - ./app:/app
     ports:
-      - "8000:8000"
+      - "8002:8000"  # <--- Puerto 8002 en el host
     environment:
       DB_NAME: sensor_db
       DB_USER: sensor_user
@@ -30,6 +31,7 @@ services:
       - db
     networks:
       - sensor_network
+    restart: unless-stopped
 
 volumes:
   postgres_data:
