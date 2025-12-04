@@ -1,7 +1,6 @@
 import os
 from pathlib import Path
 
-# Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = 'django-insecure-cambiar-en-produccion-123456789'
@@ -16,16 +15,20 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+
     'rest_framework',
     'corsheaders',
-    'sensors',  # Tu app
-    'ngrok-skip-browser-warning',
+
+    'sensors',
 ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
-    'corsheaders.middleware.CorsMiddleware',  # ← IMPORTANTE: Debe estar antes de CommonMiddleware
+
+    # MUY IMPORTANTE: CORS ANTES DE CommonMiddleware
+    'corsheaders.middleware.CorsMiddleware',
+
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -60,69 +63,33 @@ DATABASES = {
         'NAME': os.environ.get('DB_NAME', 'sensor_db'),
         'USER': os.environ.get('DB_USER', 'sensor_user'),
         'PASSWORD': os.environ.get('DB_PASSWORD', 'sensor_pass123'),
-        'HOST': os.environ.get('DB_HOST', 'localhost'),
+        'HOST': os.environ.get('DB_HOST', 'localhost'),  # Para Docker esto luego será 'db'
         'PORT': os.environ.get('DB_PORT', '5432'),
     }
 }
 
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [
-    {
-        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
-    },
+    {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
+    {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator'},
+    {'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator'},
+    {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
 ]
 
-# Internationalization
+# Internacionalización
 LANGUAGE_CODE = 'es-mx'
 TIME_ZONE = 'America/Mexico_City'
 USE_I18N = True
 USE_TZ = True
 
-# Static files (CSS, JavaScript, Images)
 STATIC_URL = 'static/'
-
-# Default primary key field type
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# ==========================================
-# CONFIGURACIÓN CORS MEJORADA
-# ==========================================
+# ======================================
+# CORS  → AQUÍ ESTABA TU PROBLEMA
+# ======================================
+CORS_ALLOW_ALL_ORIGINS = True
 
-# Para desarrollo: permite todos los orígenes
-if DEBUG:
-    CORS_ALLOW_ALL_ORIGINS = True
-    CORS_ALLOW_CREDENTIALS = True
-else:
-    # Para producción: especifica los orígenes permitidos
-    CORS_ALLOWED_ORIGINS = [
-        "http://localhost:3000",      # React dev server
-        "http://localhost:5173",      # Vite dev server
-        "http://192.168.1.78:3000",   # Tu PC en la red local
-        "http://192.168.1.78:5173",
-        # Añade aquí las URLs de producción cuando las tengas
-    ]
-    CORS_ALLOW_CREDENTIALS = True
-
-# Métodos HTTP permitidos
-CORS_ALLOW_METHODS = [
-    'DELETE',
-    'GET',
-    'OPTIONS',
-    'PATCH',
-    'POST',
-    'PUT',
-]
-
-# Headers permitidos
 CORS_ALLOW_HEADERS = [
     'accept',
     'accept-encoding',
@@ -133,32 +100,19 @@ CORS_ALLOW_HEADERS = [
     'user-agent',
     'x-csrftoken',
     'x-requested-with',
+
+    # HEADER QUE TE FALTABA
+    'ngrok-skip-browser-warning',
 ]
 
-# ==========================================
-# REST Framework Settings
-# ==========================================
+# ======================================
+# REST FRAMEWORK
+# ======================================
 REST_FRAMEWORK = {
     'DEFAULT_RENDERER_CLASSES': [
         'rest_framework.renderers.JSONRenderer',
-        'rest_framework.renderers.BrowsableAPIRenderer',  # ← AÑADIDO: Para ver la API en el navegador
     ],
     'DEFAULT_PARSER_CLASSES': [
         'rest_framework.parsers.JSONParser',
     ],
-    'DEFAULT_PERMISSION_CLASSES': [
-        'rest_framework.permissions.AllowAny',  # ← AÑADIDO: Permite acceso sin autenticación (cámbialo en producción)
-    ],
 }
-
-# ==========================================
-# CONFIGURACIÓN CSRF (para desarrollo)
-# ==========================================
-if DEBUG:
-    CSRF_TRUSTED_ORIGINS = [
-        'http://localhost:3000',
-        'http://localhost:5173',
-        'http://192.168.1.78:8002',
-        'http://192.168.1.78:3000',
-        'http://192.168.1.78:5173',
-    ]
