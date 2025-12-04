@@ -9,6 +9,30 @@ from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.utils import get_column_letter
 from datetime import datetime
 
+
+# Variable en memoria para guardar estado del LED
+LED_STATE = {"estado": 0}  # 0 = OFF, 1 = ON
+
+class LedViewSet(viewsets.ViewSet):
+
+    @action(detail=False, methods=['get'])
+    def on(self, request):
+        LED_STATE["estado"] = 1
+        return Response({"message": "LED encendido", "estado": 1})
+
+    @action(detail=False, methods=['get'])
+    def off(self, request):
+        LED_STATE["estado"] = 0
+        return Response({"message": "LED apagado", "estado": 0})
+
+    @action(detail=False, methods=['get'])
+    def estado(self, request):
+        return Response({"estado": LED_STATE["estado"]})
+
+
+
+
+
 class TemperaturaViewSet(viewsets.ModelViewSet):
     queryset = Temperatura.objects.all()
     serializer_class = TemperaturaSerializer
