@@ -1,0 +1,39 @@
+services:
+  db:
+    image: postgres:15
+    container_name: sensor_db
+    environment:
+      POSTGRES_DB: sensor_db
+      POSTGRES_USER: sensor_user
+      POSTGRES_PASSWORD: sensor_pass123
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"
+    networks:
+      - sensor_network
+
+  web:
+    build: .                   # <--- SE CONSTRUYE DESDE LA RAIZ
+    container_name: sensor_api
+    volumes:
+      - ./app:/app             # <--- TU CÓDIGO DJANGO ESTÁ EN app/
+    ports:
+      - "8000:8000"
+    environment:
+      DB_NAME: sensor_db
+      DB_USER: sensor_user
+      DB_PASSWORD: sensor_pass123
+      DB_HOST: db
+      DB_PORT: 5432
+    depends_on:
+      - db
+    networks:
+      - sensor_network
+
+volumes:
+  postgres_data:
+
+networks:
+  sensor_network:
+    driver: bridge
