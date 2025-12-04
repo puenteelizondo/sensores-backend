@@ -13,7 +13,7 @@ router.register(r'temperatura', TemperaturaViewSet, basename='temperatura')
 router.register(r'humedad', HumedadViewSet, basename='humedad')
 router.register(r'distancia', DistanciaViewSet, basename='distancia')
 router.register(r'reporte', ReporteViewSet, basename='reporte')
-router.register(r'sensores', SensoresUltimosViewSet, basename='sensores')  # ← AQUI SE AGREGA
+router.register(r'sensores', SensoresUltimosViewSet, basename='sensores')
 
 urlpatterns = [
     path('', include(router.urls)),

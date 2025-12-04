@@ -23,6 +23,7 @@ class TemperaturaViewSet(viewsets.ModelViewSet):
             return Response(serializer.data)
         return Response({'mensaje': 'No hay datos disponibles'}, status=status.HTTP_404_NOT_FOUND)
 
+
 class HumedadViewSet(viewsets.ModelViewSet):
     queryset = Humedad.objects.all()
     serializer_class = HumedadSerializer
@@ -36,6 +37,26 @@ class HumedadViewSet(viewsets.ModelViewSet):
             serializer = self.get_serializer(ultima_hum)
             return Response(serializer.data)
         return Response({'mensaje': 'No hay datos disponibles'}, status=status.HTTP_404_NOT_FOUND)
+
+
+class SensoresUltimosViewSet(viewsets.ViewSet):
+
+    @action(detail=False, methods=['get'])
+    def ultimos(self, request):
+        """Devuelve la última lectura de cada sensor"""
+
+        temp = Temperatura.objects.order_by('-id').first()
+        hum = Humedad.objects.order_by('-id').first()
+        dist = Distancia.objects.order_by('-id').first()
+
+        data = {
+            "temperatura": temp.valor if temp else None,
+            "humedad": hum.valor if hum else None,
+            "distancia": dist.valor if dist else None,
+        }
+
+        return Response(data, status=status.HTTP_200_OK)
+
 
 class DistanciaViewSet(viewsets.ModelViewSet):
     queryset = Distancia.objects.all()
@@ -74,19 +95,16 @@ class ReporteViewSet(viewsets.ViewSet):
         """
         limite = int(request.query_params.get('limite', 100))
         
-        # Obtener datos
         temperaturas = Temperatura.objects.all()[:limite]
         humedades = Humedad.objects.all()[:limite]
         distancias = Distancia.objects.all()[:limite]
         
-        # Crear workbook
         wb = openpyxl.Workbook()
         
         # ===== HOJA 1: RESUMEN =====
         ws_resumen = wb.active
         ws_resumen.title = "📊 Resumen"
         
-        # Estilos
         header_fill = PatternFill(start_color="4472C4", end_color="4472C4", fill_type="solid")
         header_font = Font(bold=True, color="FFFFFF", size=12)
         border = Border(
@@ -96,7 +114,6 @@ class ReporteViewSet(viewsets.ViewSet):
             bottom=Side(style='thin')
         )
         
-        # Título principal
         ws_resumen['A1'] = 'REPORTE DE SENSORES IoT'
         ws_resumen['A1'].font = Font(bold=True, size=16, color="1F4E78")
         ws_resumen['A1'].alignment = Alignment(horizontal='center')
@@ -106,7 +123,6 @@ class ReporteViewSet(viewsets.ViewSet):
         ws_resumen['A2'].font = Font(italic=True, size=10)
         ws_resumen.merge_cells('A2:D2')
         
-        # Headers resumen
         headers_resumen = ['Sensor', 'Total Lecturas', 'Última Lectura', 'Promedio']
         for col, header in enumerate(headers_resumen, 1):
             cell = ws_resumen.cell(row=4, column=col)
@@ -116,26 +132,25 @@ class ReporteViewSet(viewsets.ViewSet):
             cell.alignment = Alignment(horizontal='center')
             cell.border = border
         
-        # Datos resumen
         datos_resumen = [
             ['🌡️ Temperatura', 
-             temperaturas.count(), 
-             f"{temperaturas.first().valor}°C" if temperaturas.exists() else "N/A",
-             f"{sum(t.valor for t in temperaturas) / temperaturas.count():.2f}°C" if temperaturas.exists() else "N/A"],
+            temperaturas.count(), 
+            f"{temperaturas.first().valor}°C" if temperaturas.exists() else "N/A",
+            f"{sum(t.valor for t in temperaturas) / temperaturas.count():.2f}°C" if temperaturas.exists() else "N/A"],
             ['💧 Humedad', 
-             humedades.count(), 
-             f"{humedades.first().valor}%" if humedades.exists() else "N/A",
-             f"{sum(h.valor for h in humedades) / humedades.count():.2f}%" if humedades.exists() else "N/A"],
+            humedades.count(), 
+            f"{humedades.first().valor}%" if humedades.exists() else "N/A",
+            f"{sum(h.valor for h in humedades) / humedades.count():.2f}%" if humedades.exists() else "N/A"],
             ['📏 Distancia', 
-             distancias.count(), 
-             f"{distancias.first().valor}cm" if distancias.exists() else "N/A",
-             f"{sum(d.valor for d in distancias) / distancias.count():.2f}cm" if distancias.exists() else "N/A"],
+            distancias.count(), 
+            f"{distancias.first().valor}cm" if distancias.exists() else "N/A",
+            f"{sum(d.valor for d in distancias) / distancias.count():.2f}cm" if distancias.exists() else "N/A"],
         ]
         
         fills_resumen = [
-            PatternFill(start_color="FFE699", end_color="FFE699", fill_type="solid"),  # Amarillo
-            PatternFill(start_color="B4C7E7", end_color="B4C7E7", fill_type="solid"),  # Azul claro
-            PatternFill(start_color="C6E0B4", end_color="C6E0B4", fill_type="solid"),  # Verde claro
+            PatternFill(start_color="FFE699", end_color="FFE699", fill_type="solid"),
+            PatternFill(start_color="B4C7E7", end_color="B4C7E7", fill_type="solid"),
+            PatternFill(start_color="C6E0B4", end_color="C6E0B4", fill_type="solid"),
         ]
         
         for row_idx, (datos, fill) in enumerate(zip(datos_resumen, fills_resumen), 5):
@@ -146,11 +161,9 @@ class ReporteViewSet(viewsets.ViewSet):
                 cell.border = border
                 cell.alignment = Alignment(horizontal='center')
         
-        # Ajustar anchos
         for col in range(1, 5):
             ws_resumen.column_dimensions[get_column_letter(col)].width = 20
         
-        # ===== HOJA 2: TEMPERATURA =====
         ws_temp = wb.create_sheet(title="🌡️ Temperatura")
         self._crear_hoja_sensor(
             ws_temp, 
@@ -161,7 +174,6 @@ class ReporteViewSet(viewsets.ViewSet):
             "°C"
         )
         
-        # ===== HOJA 3: HUMEDAD =====
         ws_hum = wb.create_sheet(title="💧 Humedad")
         self._crear_hoja_sensor(
             ws_hum, 
@@ -172,7 +184,6 @@ class ReporteViewSet(viewsets.ViewSet):
             "%"
         )
         
-        # ===== HOJA 4: DISTANCIA =====
         ws_dist = wb.create_sheet(title="📏 Distancia")
         self._crear_hoja_sensor(
             ws_dist, 
@@ -183,7 +194,6 @@ class ReporteViewSet(viewsets.ViewSet):
             "cm"
         )
         
-        # Guardar en memoria y retornar
         response = HttpResponse(
             content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
         )
@@ -193,7 +203,6 @@ class ReporteViewSet(viewsets.ViewSet):
         return response
     
     def _crear_hoja_sensor(self, ws, queryset, titulo, header_fill, row_fill, unidad):
-        """Método auxiliar para crear hojas de sensores individuales"""
         border = Border(
             left=Side(style='thin'),
             right=Side(style='thin'),
@@ -201,13 +210,11 @@ class ReporteViewSet(viewsets.ViewSet):
             bottom=Side(style='thin')
         )
         
-        # Título
         ws['A1'] = titulo
         ws['A1'].font = Font(bold=True, size=14, color="1F4E78")
         ws['A1'].alignment = Alignment(horizontal='center')
         ws.merge_cells('A1:D1')
         
-        # Headers
         headers = ['ID', 'Valor', 'Fecha y Hora', 'Sensor ID']
         for col, header in enumerate(headers, 1):
             cell = ws.cell(row=3, column=col)
@@ -217,7 +224,6 @@ class ReporteViewSet(viewsets.ViewSet):
             cell.alignment = Alignment(horizontal='center')
             cell.border = border
         
-        # Datos
         for row_idx, obj in enumerate(queryset, 4):
             datos = [
                 obj.id,
@@ -233,7 +239,6 @@ class ReporteViewSet(viewsets.ViewSet):
                 cell.border = border
                 cell.alignment = Alignment(horizontal='center')
         
-        # Ajustar anchos
         ws.column_dimensions['A'].width = 8
         ws.column_dimensions['B'].width = 15
         ws.column_dimensions['C'].width = 20
